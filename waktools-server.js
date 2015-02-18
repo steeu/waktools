@@ -3,7 +3,19 @@
  * @author stefan eugster
  */
 
-WAKTOOLS = {};
+WAKTOOLS = WAKTOOLS || {};
+
+/**
+ *	data url maker
+ */
+
+WAKTOOLS.dataUriEncode = function ( path ) {
+    var file = File(path);
+    var mime = {png: 'png', jpg:'jpeg'};
+    var result = 'data:image/' + mime[file.extension] + ';base64,' + file.toBuffer().toString('base64');
+
+    return result;  
+}
 
 
 /**
