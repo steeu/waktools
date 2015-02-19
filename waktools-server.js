@@ -3,7 +3,7 @@
  * @author stefan eugster
  */
 
-WAKTOOLS = WAKTOOLS || {};
+var WAKTOOLS = WAKTOOLS || {};
 
 /**
  *	data url maker
