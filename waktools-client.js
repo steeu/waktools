@@ -90,15 +90,27 @@ WAKTOOLS.Error.message = function (event) {
 
 /**
  * screen handler
+ *
+ * @param path {String} component path
  */
 
-WAKTOOLS.screen = function(path) {
+WAKTOOLS.screen = function(componentPath) {
+    // activate navigation item
+	$('.mainNavItem').each(function(event) {
+	    if ($(this).attr('data-component') == componentPath) {
+	        $(this).addClass('activeItem');
+	    } else {
+	        $(this).removeClass('activeItem');
+	    }
+	});
+    // cache current component path
+    localStorage.setItem('componentPath', componentPath);
 	// remove component
-	$$('mainScreen').removeComponent();
-	// start spinner
+	//$$('mainScreen').removeComponent();
+    // start spinner
 	WAKTOOLS.Spinner.spin();
 	$$('mainScreen').loadComponent({
-		path: path,
+		path: componentPath,
 		onSuccess: function(event){
 			// stop active spinner
 			WAKTOOLS.Spinner.stop();
@@ -107,33 +119,69 @@ WAKTOOLS.screen = function(path) {
 };
 
 
+
+/**
+ * add navigation to header bar
+ */
+
+WAKTOOLS.navigation = function (callbackFn) {
+    ds.Component.getNavigation({
+		onSuccess: function (event) {
+        	var $container = $('#navContainer'),
+        		templateSource = $('#navigationTemplate').html(),
+        		templateFn = Handlebars.compile(templateSource),
+        		data = event.result;
+
+            // apply template
+        	$container.html(templateFn(data));
+        	// callback function
+            callbackFn();
+        	// navigation cklick event
+        	$container.on('click', '.mainNavItem', function(event) {
+        		var $this = $(this),
+        		    linkName = $this.text();
+
+        		WAKTOOLS.screen($this.attr('data-component'));
+        	});
+        	// navigation mouseenter event
+        	$container.on('mouseenter', '.mainNavItem', function(event) {
+        		$(this).addClass('hoverItem');
+        	});
+        	// navigation mouseleave event
+        	$container.on('mouseleave', '.mainNavItem', function(event) {
+        		$(this).removeClass('hoverItem');
+        	});			    
+		}
+	});   
+};
+
+
 /**
  * user login handler
  */
 
 WAKTOOLS.login = function() {
+    var componentPath = localStorage.getItem('componentPath');
+    
 	if ( WAF.directory.currentUser() === null ) {
 		$('#mainScreen').addClass('show-login-dialog');
-		WAKTOOLS.screen('/components/public-login.waComponent');
+        WAKTOOLS.screen('/components/public-login.waComponent');		
 	} else {
+	    // add navigation
+	    WAKTOOLS.navigation(function(event) {
+    	    $('#mainScreen').removeClass('show-login-dialog');
+            // add login name to header bar
+    		$('#loginName').text(WAF.directory.currentUser().fullName);
+    	    // set default page if component path is not set
+    	    if (!componentPath || componentPath == '/components/public-login.waComponent') {
+    	        WAKTOOLS.screen('/components/public-page.waComponent');
+    	    } else {
+                // load component
+                WAKTOOLS.screen(componentPath);    	    
+    	    }	    
+	    });
 		// idle timer (logout after 10 min inactivity)
 		new WAKTOOLS.Idle(1000 * 60 * 10, WAKTOOLS.logout);
-		// add login name to header bar
-		$('#loginName').text(WAF.directory.currentUser().fullName);
-		// load user navigation bar
-		ds.Component.getNavigation({
-			onSuccess: function (event) {
-				$('#mainScreen').removeClass('show-login-dialog');
-				// display navigation
-				WAKTOOLS.navigation(event.result);
-				// load default login component
-				if ( WAF.directory.currentUserBelongsTo('Admin') ) {
-					WAKTOOLS.screen('/components/admin-settings.waComponent');
-				} else {
-					WAKTOOLS.screen('/components/public-page.waComponent');
-				}
-			}
-		});
 	}
 };
 
@@ -145,44 +193,12 @@ WAKTOOLS.login = function() {
 WAKTOOLS.logout = function() {
 	WAF.directory.logout({
 		onSuccess: function() {
-			window.location.reload();
+		    // reset component path
+		    localStorage.setItem('componentPath', '');
+		    // reload window
+		    window.location.reload();
 		}
 	});
-};
-
-
-/**
- * user navigation
- */
-
-WAKTOOLS.navigation = function ( data ) {
-	var $container = $('#navContainer'),
-		templateSource = $('#navigationTemplate').html(),
-		templateFn = Handlebars.compile(templateSource);
-	
-	$container.html( templateFn( data ) );
-	if ( data ) {
-		$('.mainNavItem:first').addClass('activeItem');
-	}	
-	// navigation cklick event
-	$container.on('click', '.mainNavItem', function(event) {
-		var $this = $(this);
-		var linkName = $this.text();
-
-		$('.mainNavItem').removeClass('activeItem');
-		// remove toast container
-		$('#toast-container').remove();
-		$this.addClass('activeItem');
-		WAKTOOLS.screen($this.attr('data-component'));
-	});
-	// navigation mouseenter event
-	$container.on('mouseenter', '.mainNavItem', function(event) {
-		$(this).addClass('hoverItem');
-	});
-	// navigation mouseleave event
-	$container.on('mouseleave', '.mainNavItem', function(event) {
-		$(this).removeClass('hoverItem');
-	});	
 };
 
 
@@ -190,9 +206,12 @@ WAKTOOLS.navigation = function ( data ) {
  * user notifications
  */
 
-WAKTOOLS.alert = function(message, type) {	
+WAKTOOLS.alert = function(message, options) {
 	try {
-	    var type = type || 'success';
+	    var options = options || {};
+	    
+	    // default type
+	    options.type = options.type || 'success';
 		// display message for debugging issues
 		console.log(message);	    
 	    // toastr default settings
@@ -205,23 +224,37 @@ WAKTOOLS.alert = function(message, type) {
 		// check if message is string
 		if (Object.prototype.toString.call(message) === '[object String]' || Object.prototype.toString.call(message) === '[object Boolean]') {
 		    // display message
-			toastr[type]('' + message);		
+			toastr[options.type]('' + message);		
 		} else if (Object.prototype.toString.call(message) === '[object Array]') {
 		    // loop array
 		    for (var i = 0; i < message.length; i++) {
-			    WAKTOOLS.alert(message[i], type);
+			    WAKTOOLS.alert(message[i], options);
     		};
 		} else {
 			if ('result' in message) {
-				WAKTOOLS.alert(message.result);
+				WAKTOOLS.alert(message.result, options);
 			} else if ('message' in message) {
-				WAKTOOLS.alert(message.message, type);
+				WAKTOOLS.alert(message.message, options);
 			} else if ('error' in message) {
-				WAKTOOLS.alert(message.error, 'error');
+			    options.type = 'error';
+			    if (options.onError) {
+			        options.onError();
+			        options.onError = null;
+			    }
+				WAKTOOLS.alert(message.error, options);
 			} else if ('successMessage' in message) {
-				WAKTOOLS.alert(message.successMessage);
+			    if (options.onSuccess) {
+			        options.onSuccess();
+			        options.onSuccess = null;
+			    }
+				WAKTOOLS.alert(message.successMessage, options);
 			} else if ('errorMessage' in message ) {
-				WAKTOOLS.alert(message.errorMessage, 'error');
+			    options.type = 'error';
+			    if (options.onError) {
+			        options.onError();
+			        options.onError = null;
+			    }
+				WAKTOOLS.alert(message.errorMessage, options);
 			} else {
 				throw new Error('Unknown message object');
 			}
