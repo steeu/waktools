@@ -316,7 +316,7 @@ WAKTOOLS.modal = function(options) {
 	} catch (e) {
 		console.log(e);
 	}	
-}
+};
 
 
 /**
@@ -375,7 +375,7 @@ WAKTOOLS.Idle.prototype.startTimer = function() {
     _this.timeoutID = window.setTimeout(function(){
     	_this.timeoutFn();
     }, _this.idleTime);
-}
+};
 
 WAKTOOLS.Idle.prototype.reset = function() {
 	var _this = this;
@@ -384,4 +384,4 @@ WAKTOOLS.Idle.prototype.reset = function() {
     window.clearTimeout(_this.timeoutID);
     // restart timer
     _this.startTimer();		
-}
+};
