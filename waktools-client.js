@@ -1,4 +1,4 @@
-﻿
+
 /**
  * @author stefan eugster
  */
@@ -125,34 +125,40 @@ WAKTOOLS.screen = function(componentPath) {
  */
 
 WAKTOOLS.navigation = function (callbackFn) {
-    ds.Component.getNavigation({
-		onSuccess: function (event) {
-        	var $container = $('#navContainer'),
-        		templateSource = $('#navigationTemplate').html(),
-        		templateFn = Handlebars.compile(templateSource),
-        		data = event.result;
+	// add component to catalog
+	ds.addToCatalog('Component', {
+		onSuccess: function(event){
+			// load navigation
+		    ds.Component.getNavigation({
+				onSuccess: function (event) {
+		        	var $container = $('#navContainer'),
+		        		templateSource = $('#navigationTemplate').html(),
+		        		templateFn = Handlebars.compile(templateSource),
+		        		data = event.result;
 
-            // apply template
-        	$container.html(templateFn(data));
-        	// callback function
-            callbackFn();
-        	// navigation cklick event
-        	$container.on('click', '.mainNavItem', function(event) {
-        		var $this = $(this),
-        		    linkName = $this.text();
+		            // apply template
+		        	$container.html(templateFn(data));
+		        	// callback function
+		            callbackFn();
+		        	// navigation cklick event
+		        	$container.on('click', '.mainNavItem', function(event) {
+		        		var $this = $(this),
+		        		    linkName = $this.text();
 
-        		WAKTOOLS.screen($this.attr('data-component'));
-        	});
-        	// navigation mouseenter event
-        	$container.on('mouseenter', '.mainNavItem', function(event) {
-        		$(this).addClass('hoverItem');
-        	});
-        	// navigation mouseleave event
-        	$container.on('mouseleave', '.mainNavItem', function(event) {
-        		$(this).removeClass('hoverItem');
-        	});			    
+		        		WAKTOOLS.screen($this.attr('data-component'));
+		        	});
+		        	// navigation mouseenter event
+		        	$container.on('mouseenter', '.mainNavItem', function(event) {
+		        		$(this).addClass('hoverItem');
+		        	});
+		        	// navigation mouseleave event
+		        	$container.on('mouseleave', '.mainNavItem', function(event) {
+		        		$(this).removeClass('hoverItem');
+		        	});			    
+				}
+			}); 		
 		}
-	});   
+	});  
 };
 
 
@@ -316,7 +322,7 @@ WAKTOOLS.modal = function(options) {
 	} catch (e) {
 		console.log(e);
 	}	
-};
+}
 
 
 /**
