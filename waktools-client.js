@@ -58,37 +58,6 @@ WAKTOOLS.delay = (function(){
 
 
 /**
- * error handler
- */
-
-
-WAKTOOLS.Error = {};
-
-
-/**
- * extract error message from datastore method
- * ex. used for dropzone messages
- *
- * @param  {Object} datastore return value
- * @return {String} error message
- */
- 
-WAKTOOLS.Error.message = function (event) {
-    
-    var message = '';
-
-    // get error message
-    if (event.result.errorMessage) {
-        message = event.result.errorMessage;
-    } else if (event.result.messages && event.result.messages.length > 0) {
-        message = event.result.messages.join('\n\n');
-    }
-    
-    return message;
-};
-
-
-/**
  * screen handler
  *
  * @param path {String} component path
@@ -186,8 +155,8 @@ WAKTOOLS.login = function() {
                 WAKTOOLS.screen(componentPath);    	    
     	    }	    
 	    });
-		// idle timer (logout after 10 min inactivity)
-		new WAKTOOLS.Idle(1000 * 60 * 10, WAKTOOLS.logout);
+		// idle timer (logout after 45 min inactivity)
+		new WAKTOOLS.Idle(1000 * 60 * 45, WAKTOOLS.logout);
 	}
 };
 
@@ -230,37 +199,41 @@ WAKTOOLS.alert = function(message, options) {
 		// check if message is string
 		if (Object.prototype.toString.call(message) === '[object String]' || Object.prototype.toString.call(message) === '[object Boolean]') {
 		    // display message
-			toastr[options.type]('' + message);		
+			toastr[options.type]('' + message);
+
+			return message;	
 		} else if (Object.prototype.toString.call(message) === '[object Array]') {
 		    // loop array
 		    for (var i = 0; i < message.length; i++) {
-			    WAKTOOLS.alert(message[i], options);
+		        if (message[i].errCode == 100) {
+			        return WAKTOOLS.alert(message[i], options);
+			    }
     		};
 		} else {
 			if ('result' in message) {
-				WAKTOOLS.alert(message.result, options);
+				return WAKTOOLS.alert(message.result, options);
 			} else if ('message' in message) {
-				WAKTOOLS.alert(message.message, options);
+				return WAKTOOLS.alert(message.message, options);
 			} else if ('error' in message) {
 			    options.type = 'error';
 			    if (options.onError) {
 			        options.onError();
 			        options.onError = null;
 			    }
-				WAKTOOLS.alert(message.error, options);
+				return WAKTOOLS.alert(message.error, options);
 			} else if ('successMessage' in message) {
 			    if (options.onSuccess) {
 			        options.onSuccess();
 			        options.onSuccess = null;
 			    }
-				WAKTOOLS.alert(message.successMessage, options);
+				return WAKTOOLS.alert(message.successMessage, options);
 			} else if ('errorMessage' in message ) {
 			    options.type = 'error';
 			    if (options.onError) {
 			        options.onError();
 			        options.onError = null;
 			    }
-				WAKTOOLS.alert(message.errorMessage, options);
+				return WAKTOOLS.alert(message.errorMessage, options);
 			} else {
 				throw new Error('Unknown message object');
 			}
@@ -308,6 +281,7 @@ WAKTOOLS.modal = function(options) {
 			userData: { 
 				onConfirm: options.onConfirm,
 				onCancel: options.onCancel,
+				isModal: true,
 				message: options.message,
 				value: options.value,
 				selectedElementID: options.selectedElementID
@@ -319,6 +293,44 @@ WAKTOOLS.modal = function(options) {
 		dialog.setLeft((window.innerWidth - width)/2);
 		dialog.setBottom((window.innerHeight - height)/2);
 		dialog.displayDialog();		
+	} catch (e) {
+		console.log(e);
+	}	
+}
+
+
+/**
+ * tooltip
+ */
+
+WAKTOOLS.tooltip = function(selector) {
+	try {
+	    var offsetX = 20,
+	        offsetY = 10,
+	        timeout;
+        
+        // add on mouse enter
+        $('body').on('mouseenter', selector, function(e) {
+            var title = $(this).text();
+
+            timeout = setTimeout(function(){
+                $('<div class="tooltip"></div>').text(title).appendTo('body').css({top: e.pageY + offsetY, left: e.pageX + offsetX}).fadeIn('slow');
+            }, 400);
+        });
+        // remove on mouseleave
+         $('body').on('mouseleave', selector, function() {
+            clearTimeout(timeout);
+            $('.tooltip').remove();
+        });
+        // set position on mouse move
+        $('body').on('mousemove', selector, function(e) {
+            $('.tooltip').css({top: e.pageY + offsetY, left: e.pageX + offsetX});
+        });
+        // remove on click
+        $('body').on('click', selector, function() {
+            clearTimeout(timeout);
+            $('.tooltip').remove();
+        });
 	} catch (e) {
 		console.log(e);
 	}	
