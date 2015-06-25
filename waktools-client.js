@@ -58,35 +58,54 @@ WAKTOOLS.delay = (function(){
 
 
 /**
+ * destroy all existing CKEditors
+ */
+ 
+WAKTOOLS.destroyAllEditors = function() {
+	// remove existing editors
+	if (window.CKEDITOR && window.CKEDITOR.instances) {
+    	for (var i in window.CKEDITOR.instances) {
+    	    window.CKEDITOR.instances[i].destroy(false);
+    	}
+    }
+}
+
+
+/**
  * screen handler
  *
- * @param path {String} component path
+ * @param path {String} component path ex. '/components/public-page.waComponent'
  */
 
-WAKTOOLS.screen = function(componentPath) {
+WAKTOOLS.screen = function(path) {
     // activate navigation item
 	$('.mainNavItem').each(function(event) {
-	    if ($(this).attr('data-component') == componentPath) {
+	    if ($(this).attr('data-component') == path) {
 	        $(this).addClass('activeItem');
 	    } else {
 	        $(this).removeClass('activeItem');
 	    }
 	});
     // cache current component path
-    localStorage.setItem('componentPath', componentPath);
-	// remove component
-	//$$('mainScreen').removeComponent();
-    // start spinner
-	WAKTOOLS.Spinner.spin();
-	$$('mainScreen').loadComponent({
-		path: componentPath,
-		onSuccess: function(event){
-			// stop active spinner
-			WAKTOOLS.Spinner.stop();
-		}
+    localStorage.setItem('componentPath', path);
+	// remove existing editors
+	WAKTOOLS.destroyAllEditors();
+    // fade out
+	$('#mainScreen').animate({opacity: 0}, 300, 'easeInOutQuart', function() {
+	    // show spinner
+	    WAKTOOLS.Spinner.show();
+        // load component
+    	$$('mainScreen').loadComponent({
+    		path: path,
+    		onSuccess: function(event){
+    		    // hide spinner
+    		    WAKTOOLS.Spinner.hide();
+    		    // fade in
+    		    $('#mainScreen').animate({opacity: 1}, 800, 'easeInOutQuart');
+    		}
+    	});
 	});
 };
-
 
 
 /**
@@ -133,26 +152,28 @@ WAKTOOLS.navigation = function (callbackFn) {
 
 /**
  * user login handler
+ *
+ * @param defaultComponentPath {String} default component path ex. '/components/public-message.waComponent'
  */
 
-WAKTOOLS.login = function() {
-    var componentPath = localStorage.getItem('componentPath');
+WAKTOOLS.login = function(defaultComponentPath) {
+    var componentPath = localStorage.getItem('componentPath') ? localStorage.getItem('componentPath') : defaultComponentPath;
     
-	if ( WAF.directory.currentUser() === null ) {
-		$('#mainScreen').addClass('show-login-dialog');
-        WAKTOOLS.screen('/components/public-login.waComponent');		
+    // validate if user is logged in
+	if (WAF.directory.currentUser() === null) {
+        // show login wrapper
+        $$('wrapperLogin').show()    	
 	} else {
+	    // hide login layer
+	    $('#wrapperLogin').fadeOut({opacity: 0, duration: 300, easing: 'easeInOutQuart'});
 	    // add navigation
 	    WAKTOOLS.navigation(function(event) {
-    	    $('#mainScreen').removeClass('show-login-dialog');
             // add login name to header bar
     		$('#loginName').text(WAF.directory.currentUser().fullName);
     	    // set default page if component path is not set
-    	    if (!componentPath || componentPath == '/components/public-login.waComponent') {
-    	        WAKTOOLS.screen('/components/public-page.waComponent');
-    	    } else {
+    	    if (componentPath) {
                 // load component
-                WAKTOOLS.screen(componentPath);    	    
+                WAKTOOLS.screen(componentPath);    	
     	    }	    
 	    });
 		// idle timer (logout after 45 min inactivity)
@@ -301,6 +322,8 @@ WAKTOOLS.modal = function(options) {
 
 /**
  * tooltip
+ *
+ * @param selector {String} jQuery selector
  */
 
 WAKTOOLS.tooltip = function(selector) {
@@ -338,37 +361,29 @@ WAKTOOLS.tooltip = function(selector) {
 
 
 /**
- * spinner
+ * spinner (font awesome animated spinner icon)
+ * http://fortawesome.github.io/Font-Awesome/examples/#animated
  */
 
 WAKTOOLS.Spinner = WAKTOOLS.Spinner || {};
 
-WAKTOOLS.Spinner.spin = function () {
-	if (this.spinner == null) {
-		this.spinner = new Spinner({
-			lines:  15, // The number of lines to draw
-			length: 15, // The length of each line
-			width:  3, // The line thickness
-			radius: 15, // The radius of the inner circle
-			color:  '#000000', // #rbg or #rrggbb
-			speed:  1, // Rounds per second
-			trail:  10, // Afterglow percentage
-			shadow: false // Whether to render a shadow
-		});
-		this.spinner.spin(document.getElementById('wrapperMain'));
-	}
+WAKTOOLS.Spinner.show = function () {
+    // validate if spinner object exists
+    if ($('div.awesome-spinner').length === 0) {
+        // add spinner object
+        $('<div class="awesome-spinner"><i class="fa fa-refresh fa-spin"></i></div>').appendTo('body');
+    }
 };
 
-WAKTOOLS.Spinner.stop = function () {
-	if (this.spinner) {
-		this.spinner.stop();
-		this.spinner = null;
-	}
+WAKTOOLS.Spinner.hide = function () {
+    // hide spinner
+    $('div.awesome-spinner').remove();	
 };
 
 
 /**
  * idle timer
+ *
  * @param  {Number}   time in milliseconds
  * @param  {Function} timeout functions
  */

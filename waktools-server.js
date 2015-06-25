@@ -5,58 +5,294 @@
 
 var WAKTOOLS = WAKTOOLS || {};
 
-/**
- *	data url maker
- */
-
-WAKTOOLS.dataUriEncode = function ( path ) {
-    var file = File(path);
-    var mime = {png: 'png', jpg:'jpeg'};
-    var result = 'data:image/' + mime[file.extension] + ';base64,' + file.toBuffer().toString('base64');
-
-    return result;  
-}
-
 
 /**
- * trim string endings
+ * basic auth
+ *
+ * @param user     {String} user name
+ * @param password {String} password
+ * @return result  {String} base64 encoded user:password
  */
 
-WAKTOOLS.trim = function(str) {
-    // remove white spaces
-    var str = str || '';
-    
-    str = str.replace(/^\s+/g, '').replace(/\s+$/g, '');
-    return str;   
+WAKTOOLS.basicAuth = function(user, password) {
+    try {
+        var credentials = user + ':' + password,
+            credentials_hash,
+            basic_auth;
+           
+        // base64 hash
+        credentials_hash = new Buffer(credentials).toString('base64');
+        // basic auth string
+        basic_auth = 'Basic ' + credentials_hash;
+        
+        return basic_auth;	
+    } catch (e) {
+		WAKTOOLS.log(e);
+    	return e;
+    }
 };
 
 
 /**
- * basic auth
+ * execution time in seconds
+ *
+ * @param date    {Date}   start date object
+ * @return result {Object} time in seconds since start date
+ */
+ 
+WAKTOOLS.executionTime = function(date) {
+	try {
+		return (new Date() - date) / 1000;
+	} catch (e) {
+		WAKTOOLS.log(e);
+		return e;
+	}
+};
+
+
+/**
+ * validate json object
+ *
+ * @param str     {str}     JSON string
+ * @return result {Boolean} true/false
+ */
+ 
+WAKTOOLS.isJSON = function(str) {
+	try {
+        try {
+            // try parse
+            JSON.parse(str);
+        } catch (e) {
+            return false;
+        }
+        
+        return true;
+	} catch (e) {
+		WAKTOOLS.log(e);
+		return e;
+	}
+};
+
+
+/**
+ * validate url
+ *
+ * @param str {String} url
+ * @return    {String} url
+ */
+ 
+WAKTOOLS.toURL = function(str) {
+    try {
+        // validate url
+        if (/^(http|https):\/\/|^mailto:/.test(str) == false) {
+            str = 'http://' + str;
+        }
+        
+        return str;	
+    } catch (e) {
+ 		WAKTOOLS.log(e);
+		return e;   	
+    }
+};
+
+
+/**
+ * trim string attributes
+ *
+ * @param entity  {Entity}  entity for trimming stringsGen
+ * @return result {Boolean} true
+ */
+ 
+WAKTOOLS.trimStringAttributes = function(entity) {
+	try {
+		var modifiedArr = entity.getModifiedAttributes(),
+		    dataClass = entity.getDataClass();
+
+	    if (entity.isNew()) {
+	        // loop all attributes
+			for (var attrName in dataClass.attributes){
+			    // check if string
+				if (dataClass[attrName].type === 'string') {
+				    // trim or initialize
+				    if (entity[attrName] === null) {
+   				        entity[attrName] = '';
+				    } else {
+					    entity[attrName] = (entity[attrName] + '').trim();
+				    }
+				}
+			}	    
+	    } else {		
+    		// loop modified attributes
+    		for (var i = 0; i < modifiedArr.length; i++) {
+    		    // check if string
+    		    if (dataClass[modifiedArr[i]].type === 'string') {
+    		        entity[modifiedArr[i]] = (entity[modifiedArr[i]] + '').trim();
+    		    }
+    		};
+	    }
+	    
+	    return true;		
+	} catch (e) {
+		WAKTOOLS.log(e);
+		return e;
+	}
+};
+
+
+/**
+ * move folder
+ *
+ * @param source {String/Folder} folder object or folder path source
+ * @param target {String/Folder} folder object or folder path target
+ * @return       {Boolean}       true/false
+ */
+ 
+WAKTOOLS.moveFolder = function(source, target, overwrite) {
+	try {
+	    var source = (Object.prototype.toString.call(source) === '[object Folder]') ? source : Folder(source),
+	        target = (Object.prototype.toString.call(target) === '[object Folder]') ? target : Folder(target),
+	        overwrite = overwrite || true;
+	    
+	    // validate path
+	    if (source.path !== target.path) {
+	        // validate source
+    	    if (source.exists) {
+        	    // check if target exists 
+        	    if (!target.exist) {
+        	        target.create();
+        	    }
+        	    // loop containing files
+        	    source.forEachFile(function(file) {
+        	        WAKTOOLS.moveFile(file.path, target.path + file.name, overwrite);
+        	        //file.moveTo(target.path + file.name, overwrite);
+        	    });
+        	    // loop containing folders
+        	    source.forEachFolder(function(folder) {
+        	        WAKTOOLS.moveFolder(folder.path, target.path + folder.name + '/');
+        	    });
+        	    // remove source folder
+        	    source.remove();
+    	    } else {
+    	        return false;
+    	    }
+	    }
+	    
+		return true;
+	} catch (e) {
+		WAKTOOLS.log(e);
+		return e;
+	}
+};
+
+
+/**
+ * move file
+ *
+ * @param source {String/File} file object or file path source
+ * @param source {String/File} file object or file path target
+ * @return       {Boolean}     true/false
+ */
+ 
+WAKTOOLS.moveFile = function(source, target, overwrite) {
+	try {
+	    var source = (Object.prototype.toString.call(source) === '[object File]') ? source : File(source),
+	        target = (Object.prototype.toString.call(target) === '[object File]') ? target : File(target),
+	        overwrite = overwrite || true;
+
+        // validate sourcs file
+        if (source.exists) {
+            // validate target foler
+            if (!target.parent.exists) {
+                // create folder if not existent
+                target.parent.create();
+            }
+            source.moveTo(target, overwrite);
+        } else {
+            return false;
+        }
+	        	    
+		return true;
+	} catch (e) {
+		WAKTOOLS.log(e);
+		return e;
+	}
+};
+
+
+/**
+ * export to html
+ *
+ * @param options {Object} options object
+ * @return result {Boolean} true/false
+ */
+ 
+WAKTOOLS.exportToHTML = function(params) {
+	try {
+	    var params = params || {},
+	        exportFile;
+	
+	    params.data.language = params.language ? params.language : 'de';
+	    params.data.misc = __TEMPLATE_DATA[params.data.language];
+
+	    // export file
+		exportFile = File(params.file);
+		exportFile.parent.create();	
+		// save file
+		saveText(WAKTOOLS.renderHTML(params.data, params.template), exportFile , __CONFIG.EXPORT_CHARSET);
+		// sync web directory
+		if (params.sync) {
+            WAKTOOLS.sync();
+        }
+	   	    
+		return true;
+	} catch (e) {
+		WAKTOOLS.log(e);
+		return e;
+	}
+};
+
+
+/**
+ * render html
+ *
+ * @param data    {Object} data object array
+ * @param crop    {String} template name
+ * @return result {String} html
  */
 
-WAKTOOLS.basicAuth = function(user, password) {
-    var credentials = user + ':' + password,
-        credentials_hash,
-        basic_auth;
-       
-    // base64 hash
-    credentials_hash = new Buffer(credentials).toString('base64');
-    // basic auth string
-    basic_auth = "Basic " + credentials_hash;
-    
-    return basic_auth;
+WAKTOOLS.renderHTML = function(data, template) {
+	try {
+		var html,
+		    source,
+		    templateFn;
+
+		// load templates
+		source = ds.Template.find('fileName == :1', template).content;
+		// check if source exists
+		if (source && source.length > 0) {
+		    templateFn = Handlebars.compile(source);
+    		// apply template
+    		html = templateFn(data);			
+    		
+    		return html;
+	    } else {
+	        return 'template "' + template + '" not found in wakanda db';
+	    }
+	} catch (e) {
+		WAKTOOLS.log(e);
+		return e;
+	}
 };
 
 
 /**
  * create thumbnail from image
  *
- * @param source (String)  source image file path
- * @param target (String)  target image file path
- * @param size   (Number)  max image size (length or heigth) in pixel
- * @param crop   (Boolean) crop image to specified size if true
- * @return result {Object} imagemagick result object
+ * @param source  {String}  source image file path
+ * @param target  {String}  target image file path
+ * @param size    {Number}  max image size (length or heigth) in pixel
+ * @param crop    {Boolean} crop image to specified size if true
+ * @return result {Object}  imagemagick result object
  */
 
 WAKTOOLS.thumbnail = function (source, target, size, crop) {
@@ -142,9 +378,9 @@ WAKTOOLS.resize = function(source, target, size) {
         // convert image
         result = im.convert(imCommand);
         // error log
-        if (result.console && result.console.stdErr) {
-            console.error('[IMAGE-MAGICK] ' + result.console.stdErr);     
-        }
+//        if (result.console && result.console.stdErr) {
+//            console.error('[IMAGE-MAGICK] ' + result.console.stdErr);     
+//        }
              
        return result;
     } catch (e) {
@@ -161,20 +397,20 @@ WAKTOOLS.resize = function(source, target, size) {
  * @return image       {Image}  thumbnail image object
  */
 
-WAKTOOLS.icon = function(dropzoneFile) {
+WAKTOOLS.icon = function(file) {
     try {
-        var orgFile = File(ds.getDataFolder().path + 'tmp/' + dropzoneFile.name),
+        var orgFile = File(ds.getDataFolder().path + 'tmp/' + file.name),
             tmpFile = File(ds.getDataFolder().path + 'tmp/tmp_' + generateUUID()),
             result;
 
         // check if image
-        if(['image/jpeg', 'image/gif', 'image/png', 'image/bmp'].indexOf(dropzoneFile.type) !== -1) {
+        if(['image/jpeg', 'image/gif', 'image/png', 'image/bmp'].indexOf(file.type) !== -1) {
             // create thumbnail
             WAKTOOLS.thumbnail(orgFile.path, tmpFile.path);    
             result = loadImage(tmpFile);  
             // remove thumb file
             tmpFile.remove();
-        } else if (['application/pdf'].indexOf(dropzoneFile.type) !== -1) {
+        } else if (['application/pdf'].indexOf(file.type) !== -1) {
             // create thumbnail
             WAKTOOLS.thumbnailPDF(orgFile.path, tmpFile.path);    
             result = loadImage(tmpFile);  
@@ -183,15 +419,15 @@ WAKTOOLS.icon = function(dropzoneFile) {
         }else {
             var icon = 'default.png';
 
-            if(['doc', 'docx'].indexOf(orgFile.extension) !== -1) {
+            if(['doc', 'docx', 'docm'].indexOf((orgFile.extension + '').toLowerCase()) !== -1) {
                 icon = 'word.png';
-            } else if (['xls', 'xlsx'].indexOf(orgFile.extension) !== -1) {
+            } else if (['xls', 'xlsx', 'xlsm'].indexOf((orgFile.extension + '').toLowerCase()) !== -1) {
                 icon = 'excel.png';
-            } else if (['ppt', 'pptx', 'pps', 'ppsx'].indexOf(orgFile.extension) !== -1) {
+            } else if (['ppt', 'pptx', 'pps', 'ppsx'].indexOf((orgFile.extension + '').toLowerCase()) !== -1) {
                 icon = 'powerpoint.png';
-            } else if (['wmv', 'mov', 'avi', 'mp3', 'mp4', 'm4a', 'm4v'].indexOf(orgFile.extension) !== -1) {
+            } else if (['wmv', 'mov', 'avi', 'mp3', 'mp4', 'm4a', 'm4v'].indexOf((orgFile.extension + '').toLowerCase()) !== -1) {
                 icon = 'media.png';
-            } else if (['txt', 'csv', 'xml'].indexOf(orgFile.extension) !== -1) {
+            } else if (['txt', 'csv', 'xml'].indexOf((orgFile.extension + '').toLowerCase()) !== -1) {
                 icon = 'document.png';
             }
             result = loadImage(ds.getModelFolder().path + 'Libs/waktools/icons/' + icon);
@@ -283,7 +519,7 @@ WAKTOOLS.log = function(error) {
 
 WAKTOOLS.path = function(entity, relationAttribute, pathAttribute) {
     try {
-        if (entity[relationAttribute] && entity[relationAttribute][relationAttribute] == null) {
+        if (entity[relationAttribute] && ! entity[relationAttribute][relationAttribute]) {
             return entity[pathAttribute];
         } else {
             return WAKTOOLS.path(entity[relationAttribute], relationAttribute, pathAttribute) + '/' + entity[pathAttribute];
@@ -300,7 +536,7 @@ WAKTOOLS.path = function(entity, relationAttribute, pathAttribute) {
  */
 
 WAKTOOLS.nl2br = function(str) {
-    var str = WAKTOOLS.trim(str);
+    var str = str.trim();
     // replace line breaks with br tags
     str = str.replace(/\n/g, '<br>');
     
@@ -366,6 +602,33 @@ WAKTOOLS.cloneEntity = function (entity) {
     clone.save();
     
     return clone;
+};
+
+
+/**
+ * get the value from a related entity attribute
+ * @param   {object} entity
+ * @param   {string} relAttrPath - eg "company.id"
+ * @param   {*}      [valIfNot] - value to return if the related entity does not exist (if not passed will return undefined)
+ * @returns {*}      val - the value of the related entity attribute
+ */
+
+WAKTOOLS.getRelAttrVal = function(object, path, valIfNot) {
+	var val,
+		attributes,
+		attr;
+ 
+	val = object;
+	attributes = path.split('.');
+	while (typeof val === 'object' && val && attributes.length) {
+		attr = attributes.shift();
+		val = val[attr];
+	}
+	if ((typeof val === 'undefined') && (typeof valIfNot !== 'undefined')) {
+		val = valIfNot;
+	}
+ 
+	return val;
 };
 
 
