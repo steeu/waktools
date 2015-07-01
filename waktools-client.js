@@ -90,18 +90,19 @@ WAKTOOLS.screen = function(path) {
     localStorage.setItem('componentPath', path);
 	// remove existing editors
 	WAKTOOLS.destroyAllEditors();
+	// show spinner
+	WAKTOOLS.Spinner.show();
     // fade out
 	$('#mainScreen').animate({opacity: 0}, 300, 'easeInOutQuart', function() {
-	    // show spinner
-	    WAKTOOLS.Spinner.show();
         // load component
     	$$('mainScreen').loadComponent({
     		path: path,
     		onSuccess: function(event){
-    		    // hide spinner
-    		    WAKTOOLS.Spinner.hide();
     		    // fade in
-    		    $('#mainScreen').animate({opacity: 1}, 800, 'easeInOutQuart');
+    		    $('#mainScreen').animate({opacity: 1}, 1200, 'easeInOutQuart', function() {
+    		        // hide spinner
+    		        WAKTOOLS.Spinner.hide();
+    		    });
     		}
     	});
 	});
