@@ -201,6 +201,10 @@ WAKTOOLS.logout = function() {
 
 /**
  * user notifications
+ *
+ * @param message {Object}        message object
+ * @param options {Object}        options object (message type)
+ * @return        {Object/String} result 
  */
 
 WAKTOOLS.alert = function(message, options) {
@@ -232,33 +236,36 @@ WAKTOOLS.alert = function(message, options) {
 			    }
     		};
 		} else {
-			if ('result' in message) {
-				return WAKTOOLS.alert(message.result, options);
-			} else if ('message' in message) {
-				return WAKTOOLS.alert(message.message, options);
-			} else if ('error' in message) {
-			    options.type = 'error';
-			    if (options.onError) {
-			        options.onError();
-			        options.onError = null;
-			    }
-				return WAKTOOLS.alert(message.error, options);
-			} else if ('successMessage' in message) {
-			    if (options.onSuccess) {
-			        options.onSuccess();
-			        options.onSuccess = null;
-			    }
-				return WAKTOOLS.alert(message.successMessage, options);
-			} else if ('errorMessage' in message ) {
-			    options.type = 'error';
-			    if (options.onError) {
-			        options.onError();
-			        options.onError = null;
-			    }
-				return WAKTOOLS.alert(message.errorMessage, options);
-			} else {
-				throw new Error('Unknown message object');
-			}
+		    // validate if object
+		    if (Object.prototype.toString.call(message) === '[object Object]') {
+    			if ('result' in message) {
+    				return WAKTOOLS.alert(message.result, options);
+    			} else if ('message' in message) {
+    				return WAKTOOLS.alert(message.message, options);
+    			} else if ('successMessage' in message) {
+    			    if (options.onSuccess) {
+    			        options.onSuccess();
+    			        options.onSuccess = null;
+    			    }
+    				return WAKTOOLS.alert(message.successMessage, options);
+    			} else if ('errorMessage' in message) {
+    			    options.type = 'error';
+    			    if (options.onError) {
+    			        options.onError();
+    			        options.onError = null;
+    			    }
+    				return WAKTOOLS.alert(message.errorMessage, options);
+    			} else if ('error' in message) {
+    			    options.type = 'error';
+    			    if (options.onError) {
+    			        options.onError();
+    			        options.onError = null;
+    			    }
+    				return WAKTOOLS.alert(message.error, options);
+    			} else {
+    				throw new Error('Unknown message object');
+    			}
+		    }
 		}
 	} catch (e) {
 		toastr.error('Es ist ein Fehler aufgetreten. Bitte schliessen sie die Anwendung und versuchen Sie es erneut.');
