@@ -276,6 +276,8 @@ WAKTOOLS.alert = function(message, options) {
 
 /**
  * modal component dialog
+ *
+ * @param options {Object} options opject
  */
 
 WAKTOOLS.modal = function(options) {
@@ -300,11 +302,19 @@ WAKTOOLS.modal = function(options) {
 		}
 		// component title
 		waf.widgets.txtTitle.setValue(options.title);
+		// get dialog
 		dialog = waf.widgets.modalDialog;
+		// set dialog size and position
+		dialog.setWidth(width);
+		dialog.setHeight(height);
+		dialog.setLeft((window.innerWidth - width)/2);
+		dialog.setBottom((window.innerHeight - height)/2);
+		dialog.displayDialog();
+		// get dialog component
 		dialogComponent = waf.widgets.modalDialogComponent;
-		// remove component
+		// remove old web component
 		dialogComponent.removeComponent();
-		// load dialog component
+		// load new web component
 		dialogComponent.loadComponent({
 			path: componentPath,
 			userData: { 
@@ -315,13 +325,7 @@ WAKTOOLS.modal = function(options) {
 				value: options.value,
 				selectedElementID: options.selectedElementID
 			}
-		});
-		// dialog size and position
-		dialog.setWidth(width);
-		dialog.setHeight(height);
-		dialog.setLeft((window.innerWidth - width)/2);
-		dialog.setBottom((window.innerHeight - height)/2);
-		dialog.displayDialog();		
+		});	
 	} catch (e) {
 		console.log(e);
 	}	
