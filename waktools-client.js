@@ -218,8 +218,8 @@ WAKTOOLS.alert = function(message, options) {
 	    // toastr default settings
 		toastr.options = {
 			closeButton: false,
-			timeOut: '5000',
-  			extendedTimeOut: '1000',
+			timeOut: '10000',
+  			extendedTimeOut: '3000',
   			positionClass: 'toast-bottom-right'
 		};
 		// check if message is string
