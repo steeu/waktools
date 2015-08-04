@@ -7,6 +7,42 @@ var WAKTOOLS = WAKTOOLS || {};
 
 
 /**
+ * send mail
+ *
+ * @param options {Object} options object
+ * @return        {String} result
+ */
+
+WAKTOOLS.sendMail = function(options) {
+	try {
+	    var options = options || {};
+        var emailModule = require('email');
+        var result;
+        
+        // add mail attributes
+        options.from     = options.from ? options.from : __CONFIG.MAIL_FROM;
+        options.to       = options.to ? options.to : __CONFIG.MAIL_TO;
+        // add smtp attributes
+        options.address  = options.address ? options.address : __CONFIG.SMTP_ADDRESS;
+        
+        var email = new emailModule.Mail(options);
+
+        // connect to mailserver
+        email.connect();
+        // send email
+        result = email.send(options);
+        // quit mailserver connection
+        email.quit();
+
+        return result;
+	} catch (e) {
+		WAKTOOLS.log(e);
+		return e;		
+	}
+};
+
+
+/**
  * basic auth
  *
  * @param user     {String} user name
