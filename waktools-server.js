@@ -124,7 +124,7 @@ WAKTOOLS.toURL = function(str) {
             str = 'http://' + str;
         }
         
-        return str;	
+        return str;
     } catch (e) {
  		WAKTOOLS.log(e);
 		return e;   	
@@ -140,38 +140,19 @@ WAKTOOLS.toURL = function(str) {
  */
  
 WAKTOOLS.trimStringAttributes = function(entity) {
-	try {
-		var modifiedArr = entity.getModifiedAttributes(),
-		    dataClass = entity.getDataClass();
-
-	    if (entity.isNew()) {
-	        // loop all attributes
-			for (var attrName in dataClass.attributes){
-			    // check if string
-				if (dataClass[attrName].type === 'string') {
-				    // trim or initialize
-				    if (entity[attrName] === null) {
-   				        entity[attrName] = '';
-				    } else {
-					    entity[attrName] = (entity[attrName] + '').trim();
-				    }
-				}
-			}	    
-	    } else {		
-    		// loop modified attributes
-    		for (var i = 0; i < modifiedArr.length; i++) {
-    		    // check if string
-    		    if (dataClass[modifiedArr[i]].type === 'string') {
-    		        entity[modifiedArr[i]] = (entity[modifiedArr[i]] + '').trim();
-    		    }
-    		};
-	    }
-	    
-	    return true;		
-	} catch (e) {
-		WAKTOOLS.log(e);
-		return e;
-	}
+    try {
+    	// loop all attributes
+		for (var attr in entity) {
+			if (entity[attr].toString() === entity[attr]) {
+				entity[attr] = entity[attr] ? entity[attr].trim() : '';
+			}
+		}
+		
+		return true;
+    } catch (e) {
+       WAKTOOLS.log(e);
+       return e;
+    }
 };
 
 
