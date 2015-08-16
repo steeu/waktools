@@ -143,15 +143,18 @@ WAKTOOLS.trimStringAttributes = function(entity) {
     try {
     	// loop all attributes
 		for (var attr in entity) {
-			if (entity[attr].toString() === entity[attr]) {
+			var attrProperties = entity.getDataClass()[attr];
+			
+			// validate attribute
+			if (attrProperties.kind === 'storage' && attrProperties.type === 'string') {
 				entity[attr] = entity[attr] ? entity[attr].trim() : '';
 			}
 		}
 		
 		return true;
     } catch (e) {
-       WAKTOOLS.log(e);
-       return e;
+		WAKTOOLS.log(e);
+		return e;
     }
 };
 
