@@ -160,8 +160,10 @@ WAKTOOLS.navigation = function (callbackFn) {
 WAKTOOLS.login = function(defaultComponentPath) {
     var componentPath = localStorage.getItem('componentPath') ? localStorage.getItem('componentPath') : defaultComponentPath;
     
-    // validate if user is logged in
-	if (WAF.directory.currentUser() === null) {
+    // validate if user is not logged or logged as guest
+	if (WAF.directory.currentUser() === null || (WAF.directory.currentUser() && WAF.directory.currentUser().userName === 'guest')) {
+		// auto login as default guest user for passwort reset
+		WAF.directory.loginByPassword('guest', 'guest');
         // show login wrapper
         $$('wrapperLogin').show()    	
 	} else {
